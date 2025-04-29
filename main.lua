@@ -121,13 +121,20 @@ end
 showNotification("🛡️ Taxus Security Active")
 print("🛡️ Taxus Security Active")
 
+-- after your existing setup...
+
+-- Build the teleport script once
+local teleportScript = [[
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/funhaji/Protection/main/main.lua", true))()
+]]
+
+-- Grab whichever queue function is available
 local q = (syn and syn.queue_on_teleport)
        or queue_on_teleport
-       or (taxus and taxus.queue_on_teleport)
+       or (fluxus and fluxus.queue_on_teleport)
 
+-- If we have it, queue our script
 if q then
-    local scriptText = ([==[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/funhaji/Protection/refs/heads/main/main.lua"))()
-    ]==])
-    q("loadstring([==[" .. scriptText .. "]==])()")
+    q(teleportScript)
 end
+
