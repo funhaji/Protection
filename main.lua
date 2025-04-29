@@ -22,9 +22,9 @@ local allowedHosts = {
     "^api%.luarmor%.net$",
 }
 
-local fakeIP     = "0.0.0.0"
-local rateMax    = 5
-local rateWindow = 60
+local fakeIP      = "0.0.0.0"
+local rateMax     = 5
+local rateWindow  = 60
 local requestTimes = {}
 
 local function showNotification(text)
@@ -69,8 +69,8 @@ local function showNotification(text)
 end
 
 local origRequest  = getgenv().request or function(_) end
-local origGetAsync = HttpService.GetAsync
 local origHttpGet  = game.HttpGet
+local origRequestAsync = HttpService.RequestAsync
 
 getgenv().request = function(opts)
     opts = opts or {}
@@ -93,7 +93,7 @@ getgenv().request = function(opts)
         end
 
         local host = (url:match("^https?://([^/]+)") or ""):lower()
-        local ok
+        local ok = false
         for _, pat in ipairs(allowedHosts) do
             if host:match(pat) then ok = true break end
         end
@@ -117,12 +117,18 @@ getgenv().request = function(opts)
     return res
 end
 
-function HttpService:GetAsync(url, ...)
-    local r = getgenv().request({Url = url})
-    if r and r.Body then return r.Body end
-    return origGetAsync(self, url, ...)
+-- patch RequestAsync if it exists
+if typeof(origRequestAsync) == "function" then
+    function HttpService:RequestAsync(req)
+        local r = getgenv().request({Url = req.Url, Method = req.Method, Headers = req.Headers, Body = req.Body})
+        if r and r.Body then
+            return {Body = r.Body, Success = true, StatusCode = 200}
+        end
+        return origRequestAsync(self, req)
+    end
 end
 
+-- patch game:HttpGet
 function game:HttpGet(url, ...)
     local r = getgenv().request({Url = url})
     if r and r.Body then return r.Body end
