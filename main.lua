@@ -19,6 +19,7 @@ local allowedHosts = {
     "^rentry%%.co$",
     "^rentry%%.org$",
     "^api%%.luarmor%%.net$",
+    "raw%%.githubusercontent%%.com$",
 }
 
 local fakeIP       = "0.0.0.0"
