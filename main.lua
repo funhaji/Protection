@@ -1,12 +1,12 @@
--- Simplified Taxus Security (default-deny) with dynamic toast notifications and guarded persistence
-----------------------------------------------------------------
--- Services
 local Players      = game:GetService("Players")
-local HttpService  = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local TextService  = game:GetService("TextService")
+local HttpService  = game:GetService("HttpService")
 
--- Configuration
+repeat task.wait() until game:IsLoaded()
+local player    = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local playerGui = player:WaitForChild("PlayerGui")
+
 local allowedHosts = {
     "^www%.roblox%.com$",
     "^apis%.roblox%.com$",
@@ -24,12 +24,10 @@ local allowedHosts = {
 
 local fakeIP     = "0.0.0.0"
 local rateMax    = 5
-local rateWindow = 60    -- seconds
+local rateWindow = 60
 local requestTimes = {}
 
--- Notification helper
 local function showNotification(text)
-    local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
     local sg = Instance.new("ScreenGui")
     sg.Name = "TaxusNotification"
     sg.ResetOnSpawn = false
@@ -70,17 +68,14 @@ local function showNotification(text)
     end)
 end
 
--- Preserve originals
-local origRequest = getgenv().request or function(_) end
+local origRequest  = getgenv().request or function(_) end
 local origGetAsync = HttpService.GetAsync
 local origHttpGet  = game.HttpGet
 
--- Override request
 getgenv().request = function(opts)
     opts = opts or {}
     local url = opts.Url
     if url then
-        -- Rate limit
         local now = os.time()
         for i = #requestTimes, 1, -1 do
             if now - requestTimes[i] > rateWindow then
@@ -93,12 +88,10 @@ getgenv().request = function(opts)
         end
         table.insert(requestTimes, now)
 
-        -- Enforce HTTPS
         if url:match("^http://") then
             url = url:gsub("^http://", "https://")
         end
 
-        -- Extract and normalize host
         local host = (url:match("^https?://([^/]+)") or ""):lower()
         local ok
         for _, pat in ipairs(allowedHosts) do
@@ -110,11 +103,10 @@ getgenv().request = function(opts)
             return {Body = fakeIP}
         end
 
-        -- Inject headers
         opts.Url = url
         opts.Headers = opts.Headers or {}
         opts.Headers["User-Agent"]       = "TaxusAPI/RobloxApp"
-        opts.Headers["X-Security-Token"] = "TAXUS-" .. math.random(1e4, 1e5-1)
+        opts.Headers["X-Security-Token"] = "TAXUS-" .. math.random(10000,99999)
     end
 
     local res = origRequest(opts)
@@ -125,32 +117,27 @@ getgenv().request = function(opts)
     return res
 end
 
--- Patch HttpService:GetAsync
 function HttpService:GetAsync(url, ...)
     local r = getgenv().request({Url = url})
     if r and r.Body then return r.Body end
     return origGetAsync(self, url, ...)
 end
 
--- Patch game:HttpGet
 function game:HttpGet(url, ...)
     local r = getgenv().request({Url = url})
     if r and r.Body then return r.Body end
     return origHttpGet(self, url, ...)
 end
 
--- Activation toast
 showNotification("🛡️ Taxus Security Active")
 print("🛡️ Taxus Security Active")
 
--- Guarded Teleport persistence
-local q = (syn and syn.queue_on_teleport)
-       or queue_on_teleport
-       or (fluxus and fluxus.queue_on_teleport)
-if q then
-    -- Only schedule after the player and a proper place
-    if Players.LocalPlayer and game.PlaceId and game.PlaceId ~= 0 then
-        local scriptURL = "https://raw.githubusercontent.com/funhaji/Protection/refs/heads/main/main.lua"
-        q("loadstring(game:HttpGet(\""..scriptURL.."\"))()")
+repeat task.wait() until Players.LocalPlayer
+if game.PlaceId ~= 0 then
+    local q = (syn and syn.queue_on_teleport)
+           or queue_on_teleport
+           or (fluxus and fluxus.queue_on_teleport)
+    if q then
+        q([[loadstring(game:HttpGet("https://raw.githubusercontent.com/funhaji/Protection/refs/heads/main/main.lua"))()]])
     end
 end
