@@ -137,7 +137,7 @@ getgenv().request = function(opts)
 
     return res
 end
-
+showNotification("🛡️ Taxus Security Active")
 print("🛡️ Taxus Security Active")
 
 ----------------------------------------------------------------
