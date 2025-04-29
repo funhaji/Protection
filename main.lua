@@ -148,7 +148,7 @@ local q = (syn and syn.queue_on_teleport)
 if q then
     -- Re-run this entire script after teleport
     local scriptText = ([==[
-        -- (paste the entire script above between these markers)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/funhaji/Protection/refs/heads/main/main.lua"))()
     ]==])
     q("loadstring([==[" .. scriptText .. "]==])()")
 end
